@@ -24,7 +24,7 @@ import { AuthService } from '../../services/auth.service';
     MatSnackBarModule
   ],
   template: `
-    <div class="auth-container">
+        <div class="auth-container">
       <mat-card class="auth-card">
         <mat-card-header>
           <mat-card-title>

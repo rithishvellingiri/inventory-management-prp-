@@ -21,7 +21,6 @@ export class StorageService {
 
   constructor() {
     this.initializeData();
-    this.forceUpdateProductImages();
   }
 
   private initializeData(): void {
@@ -178,20 +177,7 @@ export class StorageService {
     return 'assets/image.png';
   }
 
-  /**
-   * Force update all existing products with correct images
-   */
-  private forceUpdateProductImages(): void {
-    const products = this.getItem(this.PRODUCTS_KEY);
-    if (products && products.length > 0) {
-      const updatedProducts = products.map((product: Product) => {
-        // Force update image based on product name
-        product.image = this.getDefaultImageForProduct(product.name);
-        return product;
-      });
-      this.setItem(this.PRODUCTS_KEY, updatedProducts);
-    }
-  }
+  
 
   getCategories(): Category[] {
     return this.getItem(this.CATEGORIES_KEY) || [];

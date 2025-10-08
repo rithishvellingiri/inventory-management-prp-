@@ -75,6 +75,14 @@ import { Product } from '../../models/product.model';
                 <th mat-header-cell *matHeaderCellDef>Items</th>
                 <td mat-cell *matCellDef="let order">{{order.items.length}} items</td>
               </ng-container>
+              <ng-container matColumnDef="products">
+                <th mat-header-cell *matHeaderCellDef>Products Purchased</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="product-pill" *ngFor="let it of order.items; let last = last">
+                    {{it.productName}}
+                  </span>
+                </td>
+              </ng-container>
               <ng-container matColumnDef="amount">
                 <th mat-header-cell *matHeaderCellDef>Amount</th>
                 <td mat-cell *matCellDef="let order">₹{{order.totalAmount | number:'1.2-2'}}</td>
@@ -88,8 +96,8 @@ import { Product } from '../../models/product.model';
                   </span>
                 </td>
               </ng-container>
-              <tr mat-header-row *matHeaderRowDef="['id', 'date', 'items', 'amount', 'status']"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['id', 'date', 'items', 'amount', 'status'];"></tr>
+              <tr mat-header-row *matHeaderRowDef="['id', 'date', 'items', 'products', 'amount', 'status']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['id', 'date', 'items', 'products', 'amount', 'status'];"></tr>
             </table>
             <div *ngIf="orders.length === 0" class="no-data">
               <mat-icon>shopping_bag</mat-icon>
@@ -239,6 +247,17 @@ import { Product } from '../../models/product.model';
     .status-pending {
       color: #ff9800;
       font-weight: 600;
+    }
+
+    .product-pill {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 4px 8px;
+      background: #f0f7ff;
+      border: 1px solid #d6e6ff;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      color: #333;
     }
 
     .no-data {

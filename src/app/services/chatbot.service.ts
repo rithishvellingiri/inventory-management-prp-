@@ -86,6 +86,16 @@ export class ChatbotService {
     'mixer': 'products',
     'grinder': 'products',
 
+    // Availability/Stock
+    'available': 'availability',
+    'availability': 'availability',
+    'in stock': 'availability',
+    'stock': 'availability',
+    'have': 'availability',
+    'carry': 'availability',
+    'sell': 'availability',
+    'price': 'availability',
+
     // Orders
     'order': 'orders',
     'orders': 'orders',
@@ -129,9 +139,16 @@ export class ChatbotService {
 
   getResponse(userMessage: string): ChatResponse {
     const message = userMessage.toLowerCase().trim();
+    
+    // 1) Store-aware availability checks
+    const availability = this.getAvailabilityResponse(message);
+    if (availability) {
+      return availability;
+    }
+
+    // 2) Fallback to generic responses by category
     const category = this.categorizeMessage(message);
     const response = this.getRandomResponse(category);
-    
     return {
       text: response,
       suggestions: this.getSuggestions()
@@ -174,6 +191,88 @@ export class ChatbotService {
     const categoryResponses = this.responses[category] || this.responses.default;
     const randomIndex = Math.floor(Math.random() * categoryResponses.length);
     return categoryResponses[randomIndex];
+  }
+
+  // ===== Store-aware logic =====
+  private getAvailabilityResponse(message: string): ChatResponse | null {
+    const triggerWords = ['available', 'availability', 'in stock', 'stock', 'have', 'carry', 'sell', 'price'];
+    const triggered = triggerWords.some(t => message.includes(t));
+    
+    // Also trigger if message directly mentions a known product name keyword
+    const products = this.storageService.getProducts();
+    const categories = this.storageService.getCategories();
+    const searchTerms = this.extractSearchTerms(message);
+
+    const productMatches = this.searchProducts(products, searchTerms);
+
+    if (triggered || productMatches.length > 0) {
+      if (productMatches.length > 0) {
+        const top = productMatches.slice(0, 3);
+        const lines = top.map(p => `${p.name} – ₹${p.price} (${p.stock > 0 ? p.stock + ' in stock' : 'out of stock'})`);
+        const more = productMatches.length > top.length ? ` and ${productMatches.length - top.length} more.` : '';
+        return {
+          text: `Here's what I found in our store:\n• ${lines.join('\n• ')}${more}`,
+          products: top,
+          suggestions: [
+            'Add to cart',
+            'Show more results',
+            'Filter by category',
+            'See product details'
+          ]
+        };
+      }
+
+      // No direct product matches — share high-level store info
+      const categoryNames = (categories || []).map((c: any) => c.name).filter(Boolean);
+      const byCategory: { [key: string]: number } = {};
+      for (const p of products) {
+        const cat = (p as any).categoryName || 'Other';
+        byCategory[cat] = (byCategory[cat] || 0) + 1;
+      }
+      const catLines = Object.entries(byCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count]) => `${name}: ${count}`);
+
+      return {
+        text: categoryNames.length
+          ? `I couldn't find that exact item. Current availability by category:\n• ${catLines.join('\n• ')}\nTry asking with a specific product name (e.g., "smartphone", "rice").`
+          : 'Our catalog is initializing. Please try again shortly.',
+        suggestions: this.getSuggestions()
+      };
+    }
+
+    return null;
+  }
+
+  private extractSearchTerms(message: string): string[] {
+    const stopWords = new Set([
+      'do','you','have','is','are','there','any','the','a','an','in','stock','available','availability','of','for','price','cost','sell','carry','please','can','me','show','find','i','want','to','buy','need','how','much','what'
+    ]);
+    return message
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.has(w));
+  }
+
+  private searchProducts(products: Product[], terms: string[]): Product[] {
+    if (!terms.length) return [];
+    const termSet = terms;
+    const scored = products.map(p => {
+      const name = p.name.toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const cat = ((p as any).categoryName || '').toLowerCase();
+      let score = 0;
+      for (const t of termSet) {
+        if (name.includes(t)) score += 3;
+        if (desc.includes(t)) score += 2;
+        if (cat.includes(t)) score += 1;
+      }
+      return { p, score };
+    }).filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(s => s.p);
+    return scored;
   }
 
   // Get product recommendations based on user query

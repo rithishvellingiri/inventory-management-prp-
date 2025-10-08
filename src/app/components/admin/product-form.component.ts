@@ -98,6 +98,21 @@ import { ImageService } from '../../services/image.service';
             </div>
             <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display: none;">
           </div>
+
+          <!-- Or use an Image URL -->
+          <div class="image-url-section">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Image URL (from internet)</mat-label>
+              <input matInput [(ngModel)]="imageUrlInput" name="imageUrl" placeholder="https://example.com/image.jpg">
+            </mat-form-field>
+            <div class="image-url-actions">
+              <button mat-stroked-button color="primary" type="button" (click)="applyImageUrl()">
+                <mat-icon>link</mat-icon>
+                Use Image URL
+              </button>
+              <span class="url-hint">Accepts http/https URLs. We will validate the image before saving.</span>
+            </div>
+          </div>
         </div>
       </form>
     </mat-dialog-content>
@@ -189,6 +204,26 @@ import { ImageService } from '../../services/image.service';
       color: #999;
     }
 
+    .image-url-section {
+      margin-top: 1rem;
+    }
+
+    .image-url-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .image-url-actions mat-icon {
+      margin-right: 0.25rem;
+    }
+
+    .url-hint {
+      color: #777;
+      font-size: 0.85rem;
+    }
+
     .default-images-section {
       margin-bottom: 1rem;
     }
@@ -254,6 +289,7 @@ export class ProductFormComponent implements OnInit {
   categories: Category[] = [];
   suppliers: Supplier[] = [];
   isEditMode = false;
+  imageUrlInput = '';
 
   constructor(
     private dialogRef: MatDialogRef<ProductFormComponent>,
@@ -353,6 +389,31 @@ export class ProductFormComponent implements OnInit {
 
   removeImage(): void {
     this.product.image = undefined;
+  }
+
+  applyImageUrl(): void {
+    const url = (this.imageUrlInput || '').trim();
+    if (!url) {
+      this.snackBar.open('Please enter an image URL', 'Close', { duration: 3000 });
+      return;
+    }
+    const isValidProtocol = /^https?:\/\//i.test(url);
+    if (!isValidProtocol) {
+      this.snackBar.open('Image URL must start with http or https', 'Close', { duration: 3000 });
+      return;
+    }
+
+    // Validate that the URL loads as an image before applying
+    const testImage = new Image();
+    testImage.onload = () => {
+      this.product.image = url;
+      this.imageUrlInput = '';
+      this.snackBar.open('Image URL applied', 'Close', { duration: 2000 });
+    };
+    testImage.onerror = () => {
+      this.snackBar.open('Could not load image from URL. Please check the link.', 'Close', { duration: 4000 });
+    };
+    testImage.src = url;
   }
 
   getDefaultImages(): string[] {
