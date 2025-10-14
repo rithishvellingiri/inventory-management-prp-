@@ -127,16 +127,21 @@ export class RegisterComponent {
     private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar
-  ) {}
+  ) { }
 
   onSubmit(): void {
-    const result = this.authService.register(this.email, this.password, this.fullName);
-
-    if (result.success) {
-      this.snackBar.open(result.message + '. Please login.', 'Close', { duration: 3000 });
-      this.router.navigate(['/login']);
-    } else {
-      this.snackBar.open(result.message, 'Close', { duration: 3000 });
-    }
+    this.authService.register(this.email, this.password, this.fullName).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.snackBar.open(result.message + '. Please login.', 'Close', { duration: 3000 });
+          this.router.navigate(['/login']);
+        } else {
+          this.snackBar.open(result.message, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        this.snackBar.open(error.message || 'Registration failed', 'Close', { duration: 3000 });
+      }
+    });
   }
 }

@@ -14,6 +14,7 @@ import { AuthService } from '../../services/auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { Order, OrderItem } from '../../models/order.model';
 import { PaymentDialogComponent } from '../payment/payment-dialog.component';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-cart',
@@ -204,14 +205,20 @@ export class CartComponent implements OnInit {
     private paymentService: PaymentService,
     private snackBar: MatSnackBar,
     private router: Router,
-    private dialog: MatDialog
-  ) {}
+    private dialog: MatDialog,
+    private apiService: ApiService
+  ) { }
 
   ngOnInit(): void {
     this.cartService.cartItems.subscribe(items => {
       this.cartItems = items;
       this.cartTotal = this.cartService.cartTotal;
     });
+    // Ensure we sync from backend on load if user has a token
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.cartService.refreshFromBackend();
+    }
   }
 
   updateQuantity(item: CartItem, change: number): void {
@@ -259,50 +266,32 @@ export class CartComponent implements OnInit {
     const user = this.authService.currentUserValue;
     if (!user) return;
 
-    const orderItems: OrderItem[] = this.cartItems.map(item => ({
-      id: this.storageService.generateId(),
+    // Build payload for backend orders API
+    const itemsPayload = this.cartItems.map(item => ({
       productId: item.productId,
-      productName: item.productName,
       quantity: item.quantity,
       price: item.price
     }));
 
-    const order: Order = {
-      id: orderId,
-      userId: user.id,
-      userName: user.fullName,
-      items: orderItems,
+    const payload = {
+      items: itemsPayload,
       totalAmount: this.cartTotal,
-      paymentStatus: 'success',
       paymentId: paymentId,
-      orderDate: new Date(),
-      status: 'processing'
+      shippingAddress: '',
+      notes: ''
     };
 
-    const orders = this.storageService.getOrders();
-    orders.push(order);
-    this.storageService.saveOrders(orders);
-
-    const products = this.storageService.getProducts();
-    this.cartItems.forEach(cartItem => {
-      const product = products.find(p => p.id === cartItem.productId);
-      if (product) {
-        product.stock -= cartItem.quantity;
+    // Use ApiService to create order in backend
+    this.apiService.createOrder(payload).subscribe({
+      next: () => {
+        this.cartService.clearCart();
+        this.snackBar.open('Order placed successfully!', 'Close', { duration: 3000 });
+        this.router.navigate(['/user-dashboard']);
+      },
+      error: (err: any) => {
+        console.error('Order placement failed', err);
+        this.snackBar.open('Order failed. Please try again.', 'Close', { duration: 3000 });
       }
     });
-    this.storageService.saveProducts(products);
-
-    this.storageService.addHistory({
-      id: this.storageService.generateId(),
-      userId: user.id,
-      userName: user.fullName,
-      actionType: 'purchase',
-      description: `Order placed for ₹${this.cartTotal.toFixed(2)} with ${this.cartItems.length} items`,
-      createdAt: new Date()
-    });
-
-    this.cartService.clearCart();
-    this.snackBar.open('Order placed successfully!', 'Close', { duration: 3000 });
-    this.router.navigate(['/user-dashboard']);
   }
 }

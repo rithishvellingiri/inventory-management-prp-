@@ -10,9 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Product } from '../../models/product.model';
 import { Category } from '../../models/category.model';
-import { StorageService } from '../../services/storage.service';
+import { ApiService } from '../../services/api.service';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
+import { ImageService } from '../../services/image.service';
 
 @Component({
   selector: 'app-products-list',
@@ -54,11 +55,7 @@ import { AuthService } from '../../services/auth.service';
         <mat-card *ngFor="let product of filteredProducts" class="product-card">
           <!-- Product Image -->
           <div class="product-image-container">
-            <img *ngIf="product.image" [src]="product.image" [alt]="product.name" class="product-image">
-            <div *ngIf="!product.image" class="no-image">
-              <mat-icon>image</mat-icon>
-              <p>No Image</p>
-            </div>
+            <img [src]="getProductImage(product)" [alt]="product.name" class="product-image" (error)="onImageError($event, product)">
           </div>
 
           <mat-card-header>
@@ -241,11 +238,12 @@ export class ProductsListComponent implements OnInit {
   isLoggedIn = false;
 
   constructor(
-    private storageService: StorageService,
+    private apiService: ApiService,
     private cartService: CartService,
     private authService: AuthService,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    private imageService: ImageService
+  ) { }
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isLoggedIn;
@@ -253,18 +251,27 @@ export class ProductsListComponent implements OnInit {
   }
 
   loadData(): void {
-    this.products = this.storageService.getProducts();
-    this.categories = this.storageService.getCategories();
-    const suppliers = this.storageService.getSuppliers();
-
-    this.products.forEach(product => {
-      const category = this.categories.find(c => c.id === product.categoryId);
-      const supplier = suppliers.find(s => s.id === product.supplierId);
-      product.categoryName = category?.name || 'Unknown';
-      product.supplierName = supplier?.name || 'Unknown';
+    // Load products
+    this.apiService.getProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+        this.filteredProducts = [...this.products];
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.snackBar.open('Error loading products', 'Close', { duration: 3000 });
+      }
     });
 
-    this.filteredProducts = [...this.products];
+    // Load categories
+    this.apiService.getCategories().subscribe({
+      next: (categories) => {
+        this.categories = categories;
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+      }
+    });
   }
 
   filterProducts(): void {
@@ -288,5 +295,18 @@ export class ProductsListComponent implements OnInit {
 
     this.cartService.addToCart(product.id, product.name, product.price, product.stock);
     this.snackBar.open('Product added to cart', 'Close', { duration: 2000 });
+  }
+
+  getProductImage(product: Product): string {
+    // Prefer backend-provided image; otherwise derive a default from product name
+    return (product.image && product.image.trim()) ? product.image : this.imageService.getDefaultImage(product.name);
+  }
+
+  onImageError(event: Event, product: Product): void {
+    const target = event.target as HTMLImageElement;
+    const fallback = this.imageService.getDefaultImage(product.name);
+    if (target && target.src !== window.location.origin + '/' + fallback && !target.src.endsWith(fallback)) {
+      target.src = fallback;
+    }
   }
 }

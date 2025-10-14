@@ -17,6 +17,7 @@ import { Order } from '../../models/order.model';
 import { Feedback } from '../../models/feedback.model';
 import { History } from '../../models/history.model';
 import { Product } from '../../models/product.model';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-user-dashboard',
@@ -358,8 +359,9 @@ export class UserDashboardComponent implements OnInit {
   constructor(
     private storageService: StorageService,
     private authService: AuthService,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    private apiService: ApiService
+  ) { }
 
   ngOnInit(): void {
     this.loadData();
@@ -369,18 +371,41 @@ export class UserDashboardComponent implements OnInit {
     const user = this.authService.currentUserValue;
     if (!user) return;
 
-    this.products = this.storageService.getProducts();
-    const allOrders = this.storageService.getOrders();
-    this.orders = allOrders.filter(o => o.userId === user.id);
-    this.totalSpent = this.orders.reduce((sum, o) => sum + o.totalAmount, 0);
-
-    const allFeedback = this.storageService.getFeedback();
-    this.feedback = allFeedback.filter(f => f.userId === user.id);
-    this.feedback.forEach(fb => {
-      if (fb.productId) {
-        const product = this.products.find(p => p.id === fb.productId);
-        fb.productName = product?.name;
+    // Load products from backend to ensure valid MongoDB productIds
+    this.apiService.getProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+      },
+      error: () => {
+        this.products = [];
       }
+    });
+    // Load orders from backend
+    this.apiService.getOrders().subscribe({
+      next: (orders) => {
+        this.orders = orders as any; // shape from backend
+        this.totalSpent = this.orders.reduce((sum, o: any) => sum + o.totalAmount, 0);
+      },
+      error: () => { }
+    });
+
+    // Load feedback from backend
+    this.apiService.getFeedback().subscribe({
+      next: (feedback) => {
+        // Map to local Feedback model minimally for display
+        this.feedback = (feedback as any[]).map(f => ({
+          id: f._id || f.id,
+          userId: f.userId?._id || f.userId,
+          userName: f.userId?.fullName,
+          productId: f.productId?._id || f.productId,
+          productName: f.productId?.name,
+          message: f.message,
+          type: f.type,
+          chatbotReply: f.chatbotReply,
+          createdAt: f.createdAt
+        }));
+      },
+      error: () => { }
     });
 
     const allHistory = this.storageService.getHistory();
@@ -391,34 +416,26 @@ export class UserDashboardComponent implements OnInit {
     const user = this.authService.currentUserValue;
     if (!user) return;
 
-    const product = this.products.find(p => p.id === this.newFeedback.productId);
-    const newFb: Feedback = {
-      id: this.storageService.generateId(),
-      userId: user.id,
-      userName: user.fullName,
-      productId: this.newFeedback.productId || undefined,
-      productName: product?.name,
+    // Submit to backend
+    const payload: any = {
       message: this.newFeedback.message,
-      type: this.newFeedback.type as 'feedback' | 'enquiry',
-      chatbotReply: 'Thank you for your ' + this.newFeedback.type + '! Our team will review it shortly. (Demo: AI chatbot integration required for automated responses)',
-      createdAt: new Date()
+      type: this.newFeedback.type
     };
+    if (this.newFeedback.productId) {
+      payload.productId = this.newFeedback.productId;
+    }
 
-    const allFeedback = this.storageService.getFeedback();
-    allFeedback.push(newFb);
-    this.storageService.saveFeedback(allFeedback);
-
-    this.storageService.addHistory({
-      id: this.storageService.generateId(),
-      userId: user.id,
-      userName: user.fullName,
-      actionType: 'feedback_submitted',
-      description: `Submitted ${this.newFeedback.type}: ${this.newFeedback.message.substring(0, 50)}...`,
-      createdAt: new Date()
+    this.apiService.createFeedback(payload).subscribe({
+      next: () => {
+        this.snackBar.open('Feedback submitted successfully!', 'Close', { duration: 3000 });
+        this.newFeedback = { type: 'enquiry', productId: '', message: '' };
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Feedback submission failed', err);
+        const msg = err?.error?.message || 'Failed to submit feedback';
+        this.snackBar.open(msg, 'Close', { duration: 4000 });
+      }
     });
-
-    this.snackBar.open('Feedback submitted successfully!', 'Close', { duration: 3000 });
-    this.newFeedback = { type: 'enquiry', productId: '', message: '' };
-    this.loadData();
   }
 }

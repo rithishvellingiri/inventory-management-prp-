@@ -61,7 +61,8 @@ import { AuthService } from '../../services/auth.service';
 
           <div class="demo-credentials">
             <h4>Demo Credentials:</h4>
-            <p><strong>Admin:</strong> admin&#64;store.com / admin123</p>
+            <p><strong>Admin:</strong> admin&#64;inventory.com / admin123</p>
+            <p><strong>User:</strong> user&#64;inventory.com / user123</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -153,20 +154,25 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar
-  ) {}
+  ) { }
 
   onSubmit(): void {
-    const result = this.authService.login(this.email, this.password);
-
-    if (result.success) {
-      this.snackBar.open(result.message, 'Close', { duration: 3000 });
-      if (this.authService.isAdmin) {
-        this.router.navigate(['/admin']);
-      } else {
-        this.router.navigate(['/products']);
+    this.authService.login(this.email, this.password).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.snackBar.open(result.message, 'Close', { duration: 3000 });
+          if (this.authService.isAdmin) {
+            this.router.navigate(['/admin']);
+          } else {
+            this.router.navigate(['/products']);
+          }
+        } else {
+          this.snackBar.open(result.message, 'Close', { duration: 3000 });
+        }
+      },
+      error: (error) => {
+        this.snackBar.open(error.message || 'Login failed', 'Close', { duration: 3000 });
       }
-    } else {
-      this.snackBar.open(result.message, 'Close', { duration: 3000 });
-    }
+    });
   }
 }
