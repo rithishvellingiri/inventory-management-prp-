@@ -251,7 +251,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   loadData(): void {
-    // Load products
+    //products loading
     this.apiService.getProducts().subscribe({
       next: (products) => {
         this.products = products;
@@ -263,7 +263,7 @@ export class ProductsListComponent implements OnInit {
       }
     });
 
-    // Load categories
+    //categories loading 
     this.apiService.getCategories().subscribe({
       next: (categories) => {
         this.categories = categories;
