@@ -126,7 +126,7 @@ export interface ChatMessage {
   `,
   
   styles: [`
-    <!-- style area -->
+    <!-- style Area -->
     .chatbot-container {
       position: fixed;
       bottom: 20px;
