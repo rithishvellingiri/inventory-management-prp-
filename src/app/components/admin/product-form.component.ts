@@ -11,7 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Product } from '../../models/product.model';
 import { Category } from '../../models/category.model';
 import { Supplier } from '../../models/supplier.model';
-import { StorageService } from '../../services/storage.service';
+import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ImageService } from '../../services/image.service';
 
@@ -41,6 +41,7 @@ import { ImageService } from '../../services/image.service';
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Category</mat-label>
           <mat-select [(ngModel)]="product.categoryId" name="category" required>
+            <mat-option *ngIf="categories.length === 0" disabled>Loading categories...</mat-option>
             <mat-option *ngFor="let cat of categories" [value]="cat.id">{{cat.name}}</mat-option>
           </mat-select>
         </mat-form-field>
@@ -48,6 +49,7 @@ import { ImageService } from '../../services/image.service';
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Supplier</mat-label>
           <mat-select [(ngModel)]="product.supplierId" name="supplier" required>
+            <mat-option *ngIf="suppliers.length === 0" disabled>Loading suppliers...</mat-option>
             <mat-option *ngFor="let sup of suppliers" [value]="sup.id">{{sup.name}}</mat-option>
           </mat-select>
         </mat-form-field>
@@ -294,7 +296,7 @@ export class ProductFormComponent implements OnInit {
   constructor(
     private dialogRef: MatDialogRef<ProductFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: Product,
-    private storageService: StorageService,
+    private apiService: ApiService,
     private authService: AuthService,
     private snackBar: MatSnackBar,
     private imageService: ImageService
@@ -318,45 +320,70 @@ export class ProductFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.categories = this.storageService.getCategories();
-    this.suppliers = this.storageService.getSuppliers();
+    this.loadCategories();
+    this.loadSuppliers();
+  }
+
+  loadCategories(): void {
+    console.log('Loading categories...');
+    this.apiService.getCategories().subscribe({
+      next: (categories) => {
+        console.log('Categories loaded:', categories);
+        this.categories = categories;
+        if (categories.length === 0) {
+          console.warn('No categories found!');
+          this.snackBar.open('No categories found. Please add categories first.', 'Close', { duration: 5000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        this.snackBar.open('Error loading categories: ' + (error.message || 'Unknown error'), 'Close', { duration: 5000 });
+      }
+    });
+  }
+
+  loadSuppliers(): void {
+    console.log('Loading suppliers...');
+    this.apiService.getSuppliers().subscribe({
+      next: (suppliers) => {
+        console.log('Suppliers loaded:', suppliers);
+        this.suppliers = suppliers;
+        if (suppliers.length === 0) {
+          console.warn('No suppliers found!');
+          this.snackBar.open('No suppliers found. Please add suppliers first.', 'Close', { duration: 5000 });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading suppliers:', error);
+        this.snackBar.open('Error loading suppliers: ' + (error.message || 'Unknown error'), 'Close', { duration: 5000 });
+      }
+    });
   }
 
   save(): void {
-    const products = this.storageService.getProducts();
-    const user = this.authService.currentUserValue;
-
     if (this.isEditMode) {
-      const index = products.findIndex(p => p.id === this.product.id);
-      if (index > -1) {
-        this.product.updatedAt = new Date();
-        products[index] = this.product;
-        this.storageService.addHistory({
-          id: this.storageService.generateId(),
-          userId: user?.id,
-          userName: user?.fullName,
-          actionType: 'product_update',
-          description: `Product updated: ${this.product.name}`,
-          createdAt: new Date()
-        });
-      }
+      this.apiService.updateProduct(this.product.id, this.product).subscribe({
+        next: (updatedProduct) => {
+          this.snackBar.open('Product updated successfully', 'Close', { duration: 3000 });
+          this.dialogRef.close(true);
+        },
+        error: (error) => {
+          console.error('Error updating product:', error);
+          this.snackBar.open('Error updating product', 'Close', { duration: 3000 });
+        }
+      });
     } else {
-      this.product.id = this.storageService.generateId();
-      this.product.createdAt = new Date();
-      this.product.updatedAt = new Date();
-      products.push(this.product);
-      this.storageService.addHistory({
-        id: this.storageService.generateId(),
-        userId: user?.id,
-        userName: user?.fullName,
-        actionType: 'product_add',
-        description: `Product added: ${this.product.name} (Stock: ${this.product.stock}, Price: ₹${this.product.price})`,
-        createdAt: new Date()
+      this.apiService.createProduct(this.product).subscribe({
+        next: (newProduct) => {
+          this.snackBar.open('Product created successfully', 'Close', { duration: 3000 });
+          this.dialogRef.close(true);
+        },
+        error: (error) => {
+          console.error('Error creating product:', error);
+          this.snackBar.open('Error creating product', 'Close', { duration: 3000 });
+        }
       });
     }
-
-    this.storageService.saveProducts(products);
-    this.dialogRef.close(true);
   }
 
   cancel(): void {

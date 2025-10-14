@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { map, catchError } from 'rxjs/operators';
 import { User } from '../models/user.model';
-import { StorageService } from './storage.service';
 import { Router } from '@angular/router';
 
 @Injectable({
@@ -10,9 +11,10 @@ import { Router } from '@angular/router';
 export class AuthService {
   private currentUserSubject: BehaviorSubject<User | null>;
   public currentUser: Observable<User | null>;
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(
-    private storageService: StorageService,
+    private http: HttpClient,
     private router: Router
   ) {
     const storedUser = localStorage.getItem('currentUser');
@@ -34,74 +36,76 @@ export class AuthService {
     return !!this.currentUserValue;
   }
 
-  register(email: string, password: string, fullName: string): { success: boolean; message: string } {
-    const users = this.storageService.getUsers();
-
-    if (users.find(u => u.email === email)) {
-      return { success: false, message: 'Email already exists' };
-    }
-
-    const newUser: User = {
-      id: this.storageService.generateId(),
+  register(email: string, password: string, fullName: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<any>(`${this.apiUrl}/auth/register`, {
       email,
       password,
-      fullName,
-      role: 'user',
-      createdAt: new Date()
-    };
-
-    users.push(newUser);
-    this.storageService.saveUsers(users);
-
-    this.storageService.addHistory({
-      id: this.storageService.generateId(),
-      userId: newUser.id,
-      userName: newUser.fullName,
-      actionType: 'user_registration',
-      description: `New user registered: ${newUser.fullName} (${newUser.email})`,
-      createdAt: new Date()
-    });
-
-    return { success: true, message: 'Registration successful' };
+      fullName
+    }).pipe(
+      map(response => {
+        if (response.success) {
+          // Store user and token
+          localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+          localStorage.setItem('token', response.data.token);
+          this.currentUserSubject.next(response.data.user);
+        }
+        return { success: response.success, message: response.message };
+      }),
+      catchError(error => {
+        const message = error.error?.message || 'Registration failed';
+        return throwError(() => ({ success: false, message }));
+      })
+    );
   }
 
-  login(email: string, password: string): { success: boolean; message: string } {
-    const users = this.storageService.getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-
-    if (user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      this.currentUserSubject.next(user);
-
-      this.storageService.addHistory({
-        id: this.storageService.generateId(),
-        userId: user.id,
-        userName: user.fullName,
-        actionType: 'login',
-        description: `${user.fullName} logged in`,
-        createdAt: new Date()
-      });
-
-      return { success: true, message: 'Login successful' };
-    }
-
-    return { success: false, message: 'Invalid email or password' };
+  login(email: string, password: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<any>(`${this.apiUrl}/auth/login`, {
+      email,
+      password
+    }).pipe(
+      map(response => {
+        if (response.success) {
+          // Store user and token
+          localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+          localStorage.setItem('token', response.data.token);
+          this.currentUserSubject.next(response.data.user);
+        }
+        return { success: response.success, message: response.message };
+      }),
+      catchError(error => {
+        const message = error.error?.message || 'Login failed';
+        return throwError(() => ({ success: false, message }));
+      })
+    );
   }
 
   logout(): void {
-    if (this.currentUserValue) {
-      this.storageService.addHistory({
-        id: this.storageService.generateId(),
-        userId: this.currentUserValue.id,
-        userName: this.currentUserValue.fullName,
-        actionType: 'logout',
-        description: `${this.currentUserValue.fullName} logged out`,
-        createdAt: new Date()
+    // Call backend logout endpoint
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.http.post(`${this.apiUrl}/auth/logout`, {}, {
+        headers: new HttpHeaders({
+          'Authorization': `Bearer ${token}`
+        })
+      }).subscribe({
+        next: () => console.log('Logged out successfully'),
+        error: (error) => console.error('Logout error:', error)
       });
     }
 
+    // Clear local storage
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
     this.currentUserSubject.next(null);
     this.router.navigate(['/login']);
+  }
+
+  // Helper method to get auth headers
+  getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
   }
 }

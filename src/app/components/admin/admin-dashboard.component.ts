@@ -6,7 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { StorageService } from '../../services/storage.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ApiService } from '../../services/api.service';
 import { Product } from '../../models/product.model';
 import { Order } from '../../models/order.model';
 import { Feedback } from '../../models/feedback.model';
@@ -23,7 +24,8 @@ import { ProductFormComponent } from './product-form.component';
     MatIconModule,
     MatTabsModule,
     MatTableModule,
-    MatDialogModule
+    MatDialogModule,
+    MatSnackBarModule
   ],
   template: `
     <div class="dashboard-container">
@@ -394,47 +396,100 @@ export class AdminDashboardComponent implements OnInit {
   history: History[] = [];
 
   constructor(
-    private storageService: StorageService,
-    private dialog: MatDialog
-  ) {}
+    private apiService: ApiService,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) { }
 
   ngOnInit(): void {
     this.loadData();
   }
 
   loadData(): void {
-    this.products = this.storageService.getProducts();
-    this.categories = this.storageService.getCategories();
-    this.suppliers = this.storageService.getSuppliers();
-    const users = this.storageService.getUsers();
+    this.loadProducts();
+    this.loadCategories();
+    this.loadSuppliers();
+    this.loadOrders();
+    this.loadFeedback();
+    this.loadHistory();
+  }
 
-    this.products.forEach(product => {
-      const category = this.categories.find(c => c.id === product.categoryId);
-      const supplier = this.suppliers.find(s => s.id === product.supplierId);
-      product.categoryName = category?.name || 'Unknown';
-      product.supplierName = supplier?.name || 'Unknown';
+  loadProducts(): void {
+    this.apiService.getProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+        this.totalProducts = products.length;
+        this.inventoryValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
+        this.lowStockProducts = products.filter(p => p.stock < 10);
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.snackBar.open('Error loading products', 'Close', { duration: 3000 });
+      }
     });
+  }
 
-    this.orders = this.storageService.getOrders();
-    this.orders.forEach(order => {
-      const user = users.find(u => u.id === order.userId);
-      order.userName = user?.fullName || 'Unknown';
+  loadCategories(): void {
+    this.apiService.getCategories().subscribe({
+      next: (categories) => {
+        this.categories = categories;
+        this.totalCategories = categories.length;
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        this.snackBar.open('Error loading categories', 'Close', { duration: 3000 });
+      }
     });
+  }
 
-    this.feedback = this.storageService.getFeedback();
-    this.feedback.forEach(fb => {
-      const user = users.find(u => u.id === fb.userId);
-      fb.userName = user?.fullName || 'Unknown';
+  loadSuppliers(): void {
+    this.apiService.getSuppliers().subscribe({
+      next: (suppliers) => {
+        this.suppliers = suppliers;
+        this.totalSuppliers = suppliers.length;
+      },
+      error: (error) => {
+        console.error('Error loading suppliers:', error);
+        this.snackBar.open('Error loading suppliers', 'Close', { duration: 3000 });
+      }
     });
+  }
 
-    this.history = this.storageService.getHistory();
-    this.totalProducts = this.products.length;
-    this.totalCategories = this.categories.length;
-    this.totalSuppliers = this.suppliers.length;
-    this.totalOrders = this.orders.length;
-    this.totalUsers = users.filter(u => u.role === 'user').length;
-    this.inventoryValue = this.products.reduce((sum, p) => sum + (p.price * p.stock), 0);
-    this.lowStockProducts = this.products.filter(p => p.stock < 10);
+  loadOrders(): void {
+    this.apiService.getOrders().subscribe({
+      next: (orders) => {
+        this.orders = orders;
+        this.totalOrders = orders.length;
+      },
+      error: (error) => {
+        console.error('Error loading orders:', error);
+        this.snackBar.open('Error loading orders', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  loadFeedback(): void {
+    this.apiService.getFeedback().subscribe({
+      next: (feedback) => {
+        this.feedback = feedback;
+      },
+      error: (error) => {
+        console.error('Error loading feedback:', error);
+        this.snackBar.open('Error loading feedback', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  loadHistory(): void {
+    this.apiService.getHistory().subscribe({
+      next: (history) => {
+        this.history = history;
+      },
+      error: (error) => {
+        console.error('Error loading history:', error);
+        this.snackBar.open('Error loading history', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   openProductForm(product?: Product): void {
@@ -452,19 +507,16 @@ export class AdminDashboardComponent implements OnInit {
 
   deleteProduct(product: Product): void {
     if (confirm(`Delete product "${product.name}"?`)) {
-      const products = this.storageService.getProducts();
-      const index = products.findIndex(p => p.id === product.id);
-      if (index > -1) {
-        products.splice(index, 1);
-        this.storageService.saveProducts(products);
-        this.storageService.addHistory({
-          id: this.storageService.generateId(),
-          actionType: 'product_delete',
-          description: `Product deleted: ${product.name}`,
-          createdAt: new Date()
-        });
-        this.loadData();
-      }
+      this.apiService.deleteProduct(product.id).subscribe({
+        next: () => {
+          this.snackBar.open('Product deleted successfully', 'Close', { duration: 3000 });
+          this.loadProducts();
+        },
+        error: (error) => {
+          console.error('Error deleting product:', error);
+          this.snackBar.open('Error deleting product', 'Close', { duration: 3000 });
+        }
+      });
     }
   }
 
@@ -474,31 +526,21 @@ export class AdminDashboardComponent implements OnInit {
 
     const description = prompt('Enter category description:') || '';
 
-    const categories = this.storageService.getCategories();
-
-    if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-      alert('Category already exists!');
-      return;
-    }
-
     const newCategory = {
-      id: this.storageService.generateId(),
       name: name.trim(),
-      description: description.trim(),
-      createdAt: new Date()
+      description: description.trim()
     };
 
-    categories.push(newCategory);
-    this.storageService.saveCategories(categories);
-
-    this.storageService.addHistory({
-      id: this.storageService.generateId(),
-      actionType: 'category_add',
-      description: `Category added: ${newCategory.name}`,
-      createdAt: new Date()
+    this.apiService.createCategory(newCategory).subscribe({
+      next: () => {
+        this.snackBar.open('Category created successfully', 'Close', { duration: 3000 });
+        this.loadCategories();
+      },
+      error: (error) => {
+        console.error('Error creating category:', error);
+        this.snackBar.open('Error creating category', 'Close', { duration: 3000 });
+      }
     });
-
-    this.loadData();
   }
 
   editCategory(category: any): void {
@@ -507,56 +549,35 @@ export class AdminDashboardComponent implements OnInit {
 
     const description = prompt('Enter new description:', category.description) || '';
 
-    const categories = this.storageService.getCategories();
-    const existing = categories.find(c => c.id !== category.id && c.name.toLowerCase() === name.toLowerCase());
+    const updatedCategory = {
+      name: name.trim(),
+      description: description.trim()
+    };
 
-    if (existing) {
-      alert('Category name already exists!');
-      return;
-    }
-
-    const index = categories.findIndex(c => c.id === category.id);
-    if (index > -1) {
-      categories[index].name = name.trim();
-      categories[index].description = description.trim();
-      this.storageService.saveCategories(categories);
-
-      this.storageService.addHistory({
-        id: this.storageService.generateId(),
-        actionType: 'category_update',
-        description: `Category updated: ${name}`,
-        createdAt: new Date()
-      });
-
-      this.loadData();
-    }
+    this.apiService.updateCategory(category.id, updatedCategory).subscribe({
+      next: () => {
+        this.snackBar.open('Category updated successfully', 'Close', { duration: 3000 });
+        this.loadCategories();
+      },
+      error: (error) => {
+        console.error('Error updating category:', error);
+        this.snackBar.open('Error updating category', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   deleteCategory(category: any): void {
-    const products = this.storageService.getProducts();
-    const hasProducts = products.some(p => p.categoryId === category.id);
-
-    if (hasProducts) {
-      alert('Cannot delete category. Products are assigned to this category.');
-      return;
-    }
-
     if (confirm(`Delete category "${category.name}"?`)) {
-      const categories = this.storageService.getCategories();
-      const index = categories.findIndex(c => c.id === category.id);
-      if (index > -1) {
-        categories.splice(index, 1);
-        this.storageService.saveCategories(categories);
-
-        this.storageService.addHistory({
-          id: this.storageService.generateId(),
-          actionType: 'category_delete',
-          description: `Category deleted: ${category.name}`,
-          createdAt: new Date()
-        });
-
-        this.loadData();
-      }
+      this.apiService.deleteCategory(category.id).subscribe({
+        next: () => {
+          this.snackBar.open('Category deleted successfully', 'Close', { duration: 3000 });
+          this.loadCategories();
+        },
+        error: (error) => {
+          console.error('Error deleting category:', error);
+          this.snackBar.open('Error deleting category', 'Close', { duration: 3000 });
+        }
+      });
     }
   }
 
@@ -568,28 +589,23 @@ export class AdminDashboardComponent implements OnInit {
     const email = prompt('Enter supplier email:') || '';
     const address = prompt('Enter supplier address:') || '';
 
-    const suppliers = this.storageService.getSuppliers();
-
     const newSupplier = {
-      id: this.storageService.generateId(),
       name: name.trim(),
       contact: contact.trim(),
       email: email.trim(),
-      address: address.trim(),
-      createdAt: new Date()
+      address: address.trim()
     };
 
-    suppliers.push(newSupplier);
-    this.storageService.saveSuppliers(suppliers);
-
-    this.storageService.addHistory({
-      id: this.storageService.generateId(),
-      actionType: 'supplier_add',
-      description: `Supplier added: ${newSupplier.name}`,
-      createdAt: new Date()
+    this.apiService.createSupplier(newSupplier).subscribe({
+      next: () => {
+        this.snackBar.open('Supplier created successfully', 'Close', { duration: 3000 });
+        this.loadSuppliers();
+      },
+      error: (error) => {
+        console.error('Error creating supplier:', error);
+        this.snackBar.open('Error creating supplier', 'Close', { duration: 3000 });
+      }
     });
-
-    this.loadData();
   }
 
   editSupplier(supplier: any): void {
@@ -600,52 +616,37 @@ export class AdminDashboardComponent implements OnInit {
     const email = prompt('Enter new email:', supplier.email) || '';
     const address = prompt('Enter new address:', supplier.address) || '';
 
-    const suppliers = this.storageService.getSuppliers();
+    const updatedSupplier = {
+      name: name.trim(),
+      contact: contact.trim(),
+      email: email.trim(),
+      address: address.trim()
+    };
 
-    const index = suppliers.findIndex(s => s.id === supplier.id);
-    if (index > -1) {
-      suppliers[index].name = name.trim();
-      suppliers[index].contact = contact.trim();
-      suppliers[index].email = email.trim();
-      suppliers[index].address = address.trim();
-      this.storageService.saveSuppliers(suppliers);
-
-      this.storageService.addHistory({
-        id: this.storageService.generateId(),
-        actionType: 'supplier_update',
-        description: `Supplier updated: ${name}`,
-        createdAt: new Date()
-      });
-
-      this.loadData();
-    }
+    this.apiService.updateSupplier(supplier.id, updatedSupplier).subscribe({
+      next: () => {
+        this.snackBar.open('Supplier updated successfully', 'Close', { duration: 3000 });
+        this.loadSuppliers();
+      },
+      error: (error) => {
+        console.error('Error updating supplier:', error);
+        this.snackBar.open('Error updating supplier', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   deleteSupplier(supplier: any): void {
-    const products = this.storageService.getProducts();
-    const hasProducts = products.some(p => p.supplierId === supplier.id);
-
-    if (hasProducts) {
-      alert('Cannot delete supplier. Products are assigned to this supplier.');
-      return;
-    }
-
     if (confirm(`Delete supplier "${supplier.name}"?`)) {
-      const suppliers = this.storageService.getSuppliers();
-      const index = suppliers.findIndex(s => s.id === supplier.id);
-      if (index > -1) {
-        suppliers.splice(index, 1);
-        this.storageService.saveSuppliers(suppliers);
-
-        this.storageService.addHistory({
-          id: this.storageService.generateId(),
-          actionType: 'supplier_delete',
-          description: `Supplier deleted: ${supplier.name}`,
-          createdAt: new Date()
-        });
-
-        this.loadData();
-      }
+      this.apiService.deleteSupplier(supplier.id).subscribe({
+        next: () => {
+          this.snackBar.open('Supplier deleted successfully', 'Close', { duration: 3000 });
+          this.loadSuppliers();
+        },
+        error: (error) => {
+          console.error('Error deleting supplier:', error);
+          this.snackBar.open('Error deleting supplier', 'Close', { duration: 3000 });
+        }
+      });
     }
   }
 

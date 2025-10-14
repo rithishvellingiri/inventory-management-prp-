@@ -6,6 +6,6 @@ export interface Feedback {
   productName?: string;
   message: string;
   type: 'feedback' | 'enquiry';
-  chatbotReply: string;
+  chatbotReply?: string;
   createdAt: Date;
 }
