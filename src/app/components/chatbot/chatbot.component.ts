@@ -87,7 +87,7 @@ export interface ChatMessage {
           </div>
         </div>
 
-        <!-- Quick Suggest -->
+        <!-- Quick Suggestions-->
         <div class="quick-suggestions" *ngIf="suggestions.length > 0 && !isTyping">
           <div class="suggestions-title">Quick Actions:</div>
           <button 
