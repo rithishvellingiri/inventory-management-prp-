@@ -34,7 +34,7 @@ export interface ChatMessage {
   ],
   template: `
     <div class="chatbot-container" [class.open]="isOpen">
-      <!-- Chatbot Toggle Button -->
+      <
       <button 
         mat-fab 
         color="primary" 
@@ -48,7 +48,7 @@ export interface ChatMessage {
         <mat-icon *ngIf="isOpen">close</mat-icon>
       </button>
 
-      <!-- Chat Window -->
+      
       <div class="chat-window" *ngIf="isOpen">
         <div class="chat-header">
           <div class="chat-title">
@@ -76,7 +76,7 @@ export interface ChatMessage {
             </div>
           </div>
 
-          <!-- Typing Indicator -->
+          
           <div class="typing-indicator" *ngIf="isTyping">
             <div class="typing-dots">
               <span></span>
@@ -87,7 +87,7 @@ export interface ChatMessage {
           </div>
         </div>
 
-        <!-- Quick Suggestions -->
+        <!-- Quick Suggestions-->
         <div class="quick-suggestions" *ngIf="suggestions.length > 0 && !isTyping">
           <div class="suggestions-title">Quick Actions:</div>
           <button 
@@ -100,7 +100,7 @@ export interface ChatMessage {
           </button>
         </div>
 
-        <!-- Input Area -->
+        <!-- Input field -->
         <div class="chat-input">
           <mat-form-field appearance="outline" class="message-input">
             <mat-label>Type your message...</mat-label>
@@ -124,7 +124,9 @@ export interface ChatMessage {
       </div>
     </div>
   `,
+  
   styles: [`
+    <!-- style Area -->
     .chatbot-container {
       position: fixed;
       bottom: 20px;
@@ -152,6 +154,7 @@ export interface ChatMessage {
     }
 
     .chat-window {
+    <!-- chat Area -->
       position: absolute;
       bottom: 80px;
       right: 0;

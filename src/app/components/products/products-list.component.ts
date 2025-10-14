@@ -53,7 +53,7 @@ import { ImageService } from '../../services/image.service';
 
       <div class="products-grid">
         <mat-card *ngFor="let product of filteredProducts" class="product-card">
-          <!-- Product Image -->
+          
           <div class="product-image-container">
             <img [src]="getProductImage(product)" [alt]="product.name" class="product-image" (error)="onImageError($event, product)">
           </div>
@@ -251,7 +251,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   loadData(): void {
-    // Load products
+    //products loading
     this.apiService.getProducts().subscribe({
       next: (products) => {
         this.products = products;
@@ -263,7 +263,7 @@ export class ProductsListComponent implements OnInit {
       }
     });
 
-    // Load categories
+    //categories loaded
     this.apiService.getCategories().subscribe({
       next: (categories) => {
         this.categories = categories;
@@ -298,7 +298,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   getProductImage(product: Product): string {
-    // Prefer backend-provided image; otherwise derive a default from product name
+    // Provide  a backend-provided image; otherwise derive a default from product name
     return (product.image && product.image.trim()) ? product.image : this.imageService.getDefaultImage(product.name);
   }
 
