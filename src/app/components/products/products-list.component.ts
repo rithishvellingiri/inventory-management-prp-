@@ -263,7 +263,7 @@ export class ProductsListComponent implements OnInit {
       }
     });
 
-    //categories loading 
+    //categories loaded
     this.apiService.getCategories().subscribe({
       next: (categories) => {
         this.categories = categories;
@@ -298,7 +298,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   getProductImage(product: Product): string {
-    // Prefer backend-provided image; otherwise derive a default from product name
+    // Provide  a backend-provided image; otherwise derive a default from product name
     return (product.image && product.image.trim()) ? product.image : this.imageService.getDefaultImage(product.name);
   }
 
