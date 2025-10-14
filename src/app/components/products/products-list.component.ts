@@ -53,7 +53,7 @@ import { ImageService } from '../../services/image.service';
 
       <div class="products-grid">
         <mat-card *ngFor="let product of filteredProducts" class="product-card">
-          <!-- Product Image -->
+          
           <div class="product-image-container">
             <img [src]="getProductImage(product)" [alt]="product.name" class="product-image" (error)="onImageError($event, product)">
           </div>
