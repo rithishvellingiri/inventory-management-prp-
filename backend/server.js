@@ -22,8 +22,23 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:4200',
+    'https://inventory-maanagement-prp.vercel.app',
+    'https://inventory-maanagement-prp.vercel.app'
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
