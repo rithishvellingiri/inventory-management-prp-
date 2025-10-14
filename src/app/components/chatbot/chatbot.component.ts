@@ -154,6 +154,7 @@ export interface ChatMessage {
     }
 
     .chat-window {
+    <!-- chat Area -->
       position: absolute;
       bottom: 80px;
       right: 0;
