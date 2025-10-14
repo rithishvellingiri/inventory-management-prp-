@@ -34,7 +34,7 @@ export interface ChatMessage {
   ],
   template: `
     <div class="chatbot-container" [class.open]="isOpen">
-      <!-- Chatbot Toggle Button -->
+      <
       <button 
         mat-fab 
         color="primary" 
@@ -48,7 +48,7 @@ export interface ChatMessage {
         <mat-icon *ngIf="isOpen">close</mat-icon>
       </button>
 
-      <!-- Chat Window -->
+      
       <div class="chat-window" *ngIf="isOpen">
         <div class="chat-header">
           <div class="chat-title">
@@ -76,7 +76,7 @@ export interface ChatMessage {
             </div>
           </div>
 
-          <!-- Typing Indicator -->
+          
           <div class="typing-indicator" *ngIf="isTyping">
             <div class="typing-dots">
               <span></span>
