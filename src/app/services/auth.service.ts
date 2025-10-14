@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 export class AuthService {
   private currentUserSubject: BehaviorSubject<User | null>;
   public currentUser: Observable<User | null>;
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = 'https://inventory-management-prp.onrender.com/';
 
   constructor(
     private http: HttpClient,
