@@ -100,7 +100,7 @@ export interface ChatMessage {
           </button>
         </div>
 
-        <!-- Input Area -->
+        <!-- Input field -->
         <div class="chat-input">
           <mat-form-field appearance="outline" class="message-input">
             <mat-label>Type your message...</mat-label>
