@@ -251,7 +251,26 @@ export class ApiService {
         return this.http.get<any>(`${this.apiUrl}/orders`, {
             headers: this.getAuthHeaders()
         }).pipe(
-            map(response => response.data.orders),
+            map(response => {
+                const orders = response.data.orders || [];
+                return orders.map((ord: any) => ({
+                    id: ord._id || ord.id,
+                    userId: ord.userId?._id || ord.userId?.id || ord.userId,
+                    userName: ord.userId?.fullName,
+                    items: (ord.items || []).map((it: any) => ({
+                        id: it._id || it.id,
+                        productId: it.productId?._id || it.productId?.id || it.productId,
+                        productName: it.productId?.name,
+                        quantity: it.quantity,
+                        price: it.price
+                    })),
+                    totalAmount: ord.totalAmount,
+                    paymentStatus: ord.paymentStatus,
+                    paymentId: ord.paymentId,
+                    orderDate: ord.orderDate || ord.createdAt,
+                    status: ord.status
+                }));
+            }),
             catchError(error => throwError(() => error))
         );
     }
@@ -279,7 +298,20 @@ export class ApiService {
         return this.http.get<any>(`${this.apiUrl}/feedback`, {
             headers: this.getAuthHeaders()
         }).pipe(
-            map(response => response.data.feedback),
+            map(response => {
+                const feedback = response.data.feedback || [];
+                return feedback.map((fb: any) => ({
+                    id: fb._id || fb.id,
+                    userId: fb.userId?._id || fb.userId?.id || fb.userId,
+                    userName: fb.userId?.fullName,
+                    productId: fb.productId?._id || fb.productId?.id || fb.productId,
+                    productName: fb.productId?.name,
+                    message: fb.message,
+                    type: fb.type,
+                    chatbotReply: fb.chatbotReply,
+                    createdAt: fb.createdAt
+                }));
+            }),
             catchError(error => throwError(() => error))
         );
     }
