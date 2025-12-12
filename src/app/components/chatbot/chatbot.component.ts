@@ -81,7 +81,7 @@ export interface ChatMessage {
             <div class="typing-dots">
               <span></span>
               <span></span>
-              <span></span>
+              <span></spab>
             </div>
             <span class="typing-text">Assistant is typing...</span>
           </div>
