@@ -118,7 +118,7 @@ import { ApiService } from '../../services/api.service';
     }
 
     .cart-card {
-      pedding
+      padding : 2rem;
     }
 
     .cart-table {
