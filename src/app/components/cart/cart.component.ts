@@ -122,7 +122,7 @@ import { ApiService } from '../../services/api.service';
     }
 
     .cart-table {
-      width: 100%;
+      width: 100%
     }
 
     .quantity-controls {
