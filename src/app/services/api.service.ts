@@ -14,11 +14,7 @@ import { History } from '../models/history.model';
     providedIn: 'root'
 })
 export class ApiService {
-<<<<<<< HEAD
-    private apiUrl = 'https://inventory-management-prp.onrender.com/api';
-=======
     private apiUrl = 'http://localhost:3000/api';
->>>>>>> 19510cb (project updated)
 
     constructor(private http: HttpClient) { }
 

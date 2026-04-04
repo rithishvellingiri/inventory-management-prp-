@@ -21,17 +21,12 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-<<<<<<< HEAD
 // CORS configuration
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:4200',
     'https://inventory-maanagement-prp.vercel.app',
     'https://inventory-maanagement-prp.vercel.app'
 ];
-
-=======
-// CORS
->>>>>>> 19510cb (project updated)
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
