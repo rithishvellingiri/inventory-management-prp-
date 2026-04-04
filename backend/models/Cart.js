@@ -26,7 +26,7 @@ const cartSchema = new mongoose.Schema({
 });
 
 // Index for better query performance
-cartSchema.index({ userId: 1 });
+// userId already has unique: true index
 
 // Virtual for total items count
 cartSchema.virtual('totalItems').get(function () {

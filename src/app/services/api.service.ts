@@ -14,7 +14,11 @@ import { History } from '../models/history.model';
     providedIn: 'root'
 })
 export class ApiService {
+<<<<<<< HEAD
     private apiUrl = 'https://inventory-management-prp.onrender.com/api';
+=======
+    private apiUrl = 'http://localhost:3000/api';
+>>>>>>> 19510cb (project updated)
 
     constructor(private http: HttpClient) { }
 
@@ -29,7 +33,7 @@ export class ApiService {
 
     // Products API
     getProducts(): Observable<Product[]> {
-        return this.http.get<any>(`${this.apiUrl}/products`).pipe(
+        return this.http.get<any>(`${this.apiUrl}/products?limit=1000`).pipe(
             map(response => {
                 const products = response.data.products;
                 // Transform MongoDB _id to id for frontend compatibility
@@ -97,9 +101,19 @@ export class ApiService {
         );
     }
 
+    // Users API
+    getUserStats(): Observable<any> {
+        return this.http.get<any>(`${this.apiUrl}/users/stats/overview`, {
+            headers: this.getAuthHeaders()
+        }).pipe(
+            map(response => response.data),
+            catchError(error => throwError(() => error))
+        );
+    }
+
     // Categories API
     getCategories(): Observable<Category[]> {
-        return this.http.get<any>(`${this.apiUrl}/categories`).pipe(
+        return this.http.get<any>(`${this.apiUrl}/categories?limit=1000`).pipe(
             map(response => {
                 const categories = response.data.categories;
                 // Transform MongoDB _id to id for frontend compatibility
@@ -149,7 +163,7 @@ export class ApiService {
 
     // Suppliers API
     getSuppliers(): Observable<Supplier[]> {
-        return this.http.get<any>(`${this.apiUrl}/suppliers`).pipe(
+        return this.http.get<any>(`${this.apiUrl}/suppliers?limit=1000`).pipe(
             map(response => {
                 const suppliers = response.data.suppliers;
                 // Transform MongoDB _id to id for frontend compatibility
@@ -248,7 +262,7 @@ export class ApiService {
 
     // Orders API
     getOrders(): Observable<Order[]> {
-        return this.http.get<any>(`${this.apiUrl}/orders`, {
+        return this.http.get<any>(`${this.apiUrl}/orders?limit=1000`, {
             headers: this.getAuthHeaders()
         }).pipe(
             map(response => {
@@ -295,7 +309,7 @@ export class ApiService {
 
     // Feedback API
     getFeedback(): Observable<Feedback[]> {
-        return this.http.get<any>(`${this.apiUrl}/feedback`, {
+        return this.http.get<any>(`${this.apiUrl}/feedback?limit=1000`, {
             headers: this.getAuthHeaders()
         }).pipe(
             map(response => {
@@ -327,7 +341,7 @@ export class ApiService {
 
     // History API
     getHistory(): Observable<History[]> {
-        return this.http.get<any>(`${this.apiUrl}/history`, {
+        return this.http.get<any>(`${this.apiUrl}/history?limit=1000`, {
             headers: this.getAuthHeaders()
         }).pipe(
             map(response => response.data.history),

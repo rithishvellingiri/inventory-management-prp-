@@ -63,8 +63,8 @@ const validateProduct = [
         .withMessage('Stock must be a non-negative integer'),
     body('description')
         .trim()
-        .isLength({ min: 10, max: 500 })
-        .withMessage('Description must be between 10 and 500 characters'),
+        .isLength({ min: 2, max: 500 })
+        .withMessage('Description must be between 2 and 500 characters'),
     handleValidationErrors
 ];
 
@@ -140,8 +140,8 @@ const validateCartItem = [
 const validateFeedback = [
     body('message')
         .trim()
-        .isLength({ min: 5, max: 500 })
-        .withMessage('Message must be between 5 and 500 characters'),
+        .isLength({ min: 2, max: 500 })
+        .withMessage('Message must be between 2 and 500 characters'),
     body('type')
         .optional()
         .isIn(['feedback', 'enquiry'])
@@ -173,8 +173,8 @@ const validatePagination = [
         .withMessage('Page must be a positive integer'),
     query('limit')
         .optional()
-        .isInt({ min: 1, max: 100 })
-        .withMessage('Limit must be between 1 and 100'),
+        .isInt({ min: 1, max: 1000 })
+        .withMessage('Limit must be between 1 and 1000'),
     handleValidationErrors
 ];
 

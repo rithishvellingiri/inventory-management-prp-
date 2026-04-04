@@ -427,8 +427,12 @@ export class UserDashboardComponent implements OnInit {
       error: () => { }
     });
 
-    const allHistory = this.storageService.getHistory();
-    this.history = allHistory.filter(h => h.userId === user.id);
+    this.apiService.getHistory().subscribe({
+      next: (history: any[]) => {
+        this.history = history;
+      },
+      error: () => {}
+    });
   }
 
   submitFeedback(): void {

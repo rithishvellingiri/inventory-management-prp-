@@ -206,7 +206,7 @@ import { ProductFormComponent } from './product-form.component';
               </ng-container>
               <ng-container matColumnDef="user">
                 <th mat-header-cell *matHeaderCellDef>Customer</th>
-                <td mat-cell *matCellDef="let order">{{order.userName}}</td>
+                <td mat-cell *matCellDef="let order">{{order.userId?.fullName || order.userName || 'System'}}</td>
               </ng-container>
               <ng-container matColumnDef="amount">
                 <th mat-header-cell *matHeaderCellDef>Amount</th>
@@ -231,7 +231,7 @@ import { ProductFormComponent } from './product-form.component';
             <table mat-table [dataSource]="feedback" class="data-table">
               <ng-container matColumnDef="user">
                 <th mat-header-cell *matHeaderCellDef>User</th>
-                <td mat-cell *matCellDef="let fb">{{fb.userName}}</td>
+                <td mat-cell *matCellDef="let fb">{{fb.userId?.fullName || fb.userName || 'System'}}</td>
               </ng-container>
               <ng-container matColumnDef="type">
                 <th mat-header-cell *matHeaderCellDef>Type</th>
@@ -264,7 +264,7 @@ import { ProductFormComponent } from './product-form.component';
               </ng-container>
               <ng-container matColumnDef="user">
                 <th mat-header-cell *matHeaderCellDef>User</th>
-                <td mat-cell *matCellDef="let h">{{h.userName || 'System'}}</td>
+                <td mat-cell *matCellDef="let h">{{h.userId?.fullName || h.userName || 'System'}}</td>
               </ng-container>
               <ng-container matColumnDef="date">
                 <th mat-header-cell *matHeaderCellDef>Date</th>
@@ -412,6 +412,18 @@ export class AdminDashboardComponent implements OnInit {
     this.loadOrders();
     this.loadFeedback();
     this.loadHistory();
+    this.loadUsers();
+  }
+
+  loadUsers(): void {
+    this.apiService.getUserStats().subscribe({
+      next: (stats) => {
+        this.totalUsers = stats.totalUsers || 0;
+      },
+      error: (error) => {
+        console.error('Error loading users stats:', error);
+      }
+    });
   }
 
   loadProducts(): void {

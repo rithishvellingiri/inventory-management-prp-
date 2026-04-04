@@ -15,12 +15,13 @@ app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
     message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
 
+<<<<<<< HEAD
 // CORS configuration
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:4200',
@@ -28,6 +29,9 @@ const allowedOrigins = [
     'https://inventory-maanagement-prp.vercel.app'
 ];
 
+=======
+// CORS
+>>>>>>> 19510cb (project updated)
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
@@ -42,11 +46,11 @@ app.use(cors({
     credentials: true
 }));
 
-// Body parsing middleware
+// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
+// Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
@@ -54,16 +58,28 @@ if (process.env.NODE_ENV === 'development') {
 // Static files
 app.use('/uploads', express.static('uploads'));
 
-// Database connection
+const User = require('./models/User');
+
+// ✅ FIXED DATABASE CONNECTION
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log(`MongoDB Atlas connected: ${conn.connection.host}`);
+        const conn = await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`✅ MongoDB Atlas connected: ${conn.connection.host}`);
+        
+        // Auto-seed if database is empty
+        try {
+            const userCount = await User.countDocuments();
+            if (userCount === 0) {
+                console.log('📦 Database is empty. Running seed script...');
+                const { execSync } = require('child_process');
+                execSync('node scripts/seed.js', { stdio: 'inherit', cwd: __dirname });
+                console.log('✅ Auto-seeding completed.');
+            }
+        } catch (seedError) {
+            console.error('❌ Error during auto-seeding:', seedError.message);
+        }
     } catch (error) {
-        console.error('MongoDB Atlas connection error:', error);
+        console.error('❌ MongoDB Atlas connection error:', error.message);
         process.exit(1);
     }
 };
@@ -81,7 +97,7 @@ app.use('/api/cart', require('./routes/cart'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/history', require('./routes/history'));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -90,12 +106,12 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// 404 handler
+// 404
 app.use('*', (req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 
-// Global error handler
+// Error handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.status || 500).json({
@@ -107,8 +123,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
 });
 
 module.exports = app;
