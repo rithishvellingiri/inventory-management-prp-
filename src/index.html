@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Departmental Store - Inventory Management System</title>
+    <title>PRP Stores — Inventory Management System</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="PRP Stores — A modern inventory management and e-commerce platform. Browse products, manage orders, and track inventory in real time.">
     <base href="/">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   </head>
   <body>
     <app-root>
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Roboto, sans-serif;">
-        <div style="text-align: center;">
-          <h2>Loading Departmental Store...</h2>
-          <p>Please wait...</p>
+      <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0F1117;font-family:'Inter',sans-serif;">
+        <div style="text-align:center;">
+          <div style="width:48px;height:48px;border:3px solid #6C63FF33;border-top-color:#6C63FF;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px;"></div>
+          <h2 style="color:#F1F5F9;font-size:1.25rem;font-weight:600;margin-bottom:8px;">PRP Stores</h2>
+          <p style="color:#64748B;font-size:0.9rem;">Loading your dashboard…</p>
         </div>
       </div>
     </app-root>
+    <style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </body>
 </html>
